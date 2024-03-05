@@ -1,13 +1,10 @@
 ---
-title: "My title"
-subtitle: "My subtitle if needed"
+title: "Exploratory Data Analysis of Airbnb listings in Paris, Frace"
 author: 
-  - First author
-  - Another author
-thanks: "Code and data are available at: LINK."
+  - Aryaman Sharma
+thanks: "Code and data are available at: https://github.com/Ary4m3n/airbnb-paris.git"
 date: today
 date-format: long
-abstract: "First sentence. Second sentence. Third sentence. Fourth sentence."
 format: pdf
 number-sections: true
 bibliography: references.bib
@@ -19,203 +16,382 @@ bibliography: references.bib
 #| message: false
 
 library(tidyverse)
-library(palmerpenguins)
+library(modelsummary)
+library(arrow)
+library(ggplot2)
+library(knitr)
+library(naniar)
+library(janitor)
 ```
 
+We start by looking at the distribution and properties of individual variables. 
 
-# Introduction
+# Prices
 
-You can and should cross-reference sections and sub-sections. We use @citeR and @rohan.
-
-The remainder of this paper is structured as follows. @sec-data....
-
-
-
-# Data {#sec-data}
-
-Some of our data is of penguins (@fig-bills), from @palmerpenguins.
+We see in (@fig-prices-1), the distribution of prices. We see that we consider a log scale for (@fig-prices-2) in order to take into account the outliers.
 
 ```{r}
-#| label: fig-bills
-#| fig-cap: Bills of penguins
-#| echo: false
-
-ggplot(penguins, aes(x = island, fill = species)) +
-  geom_bar(alpha = 0.8) +
-  scale_fill_manual(values = c("darkorange","purple","cyan4"),
-                    guide = "none") +
-  theme_minimal() +
-  facet_wrap(~species, ncol = 1) +
-  coord_flip()
-```
-
-Talk more about it.
-
-And also planes (@fig-planes). (You can change the height and width, but don't worry about doing that until you have finished every other aspect of the paper - Quarto will try to make it look nice and the defaults usually work well once you have enough text.)
-
-```{r}
-#| label: fig-planes
-#| fig-cap: Relationship between wing length and width
 #| echo: false
 #| warning: false
 #| message: false
 
-analysis_data <- read_csv(here::here("data/analysis_data/analysis_data.csv"))
-
-analysis_data |> 
-  ggplot(aes(x = width, y = length)) +
-  geom_point(alpha = 0.8) +
-  theme_minimal() +
-  labs(x = "Wing width (mm)",
-       y = "Wing length (mm)")
+airbnb_data_selected <- read_parquet("../data/analysis_data/2024-03-04-paris-airbnblistings-select_variables.parquet")
 ```
 
-Talk way more about it. 
-
-
-
-# Model
-
-The goal of our modelling strategy is twofold. Firstly,...
-
-Here we briefly describe the Bayesian analysis model used to investigate... Background details and diagnostics are included in [Appendix -@sec-model-details].
-
-## Model set-up
-
-Define $y_i$ as the number of seconds that the plane remained aloft. Then $\beta_i$ is the wing width and $\gamma_i$ is the wing length, both measured in millimeters.  
-
-\begin{align} 
-y_i|\mu_i, \sigma &\sim \mbox{Normal}(\mu_i, \sigma) \\
-\mu_i &= \alpha + \beta_i + \gamma_i\\
-\alpha &\sim \mbox{Normal}(0, 2.5) \\
-\beta &\sim \mbox{Normal}(0, 2.5) \\
-\gamma &\sim \mbox{Normal}(0, 2.5) \\
-\sigma &\sim \mbox{Exponential}(1)
-\end{align}
-
-We run the model in R [@citeR] using the `rstanarm` package of @rstanarm. We use the default priors from `rstanarm`.
-
-
-### Model justification
-
-We expect a positive relationship between the size of the wings and time spent aloft. In particular...
-
-We can use maths by including latex between dollar signs, for instance $\theta$.
-
-
-# Results
-
-Our results are summarized in @tbl-modelresults.
-
 ```{r}
+#| label: fig-prices
 #| echo: false
-#| eval: true
 #| warning: false
 #| message: false
-
-library(rstanarm)
-
-first_model <-
-  readRDS(file = here::here("models/first_model.rds"))
-```
-
-```{r}
-#| echo: false
-#| eval: true
-#| label: tbl-modelresults
-#| tbl-cap: "Explanatory models of flight time based on wing width and wing length"
-#| warning: false
-
-modelsummary::modelsummary(
-  list(
-    "First model" = first_model
-  ),
-  statistic = "mad",
-  fmt = 2
-)
-```
-
-
-
-
-# Discussion
-
-## First discussion point {#sec-first-point}
-
-If my paper were 10 pages, then should be be at least 2.5 pages. The discussion is a chance to show off what you know and what you learnt from all this. 
-
-## Second discussion point
-
-## Third discussion point
-
-## Weaknesses and next steps
-
-Weaknesses and next steps should also be included.
-
-\newpage
-
-\appendix
-
-# Appendix {-}
-
-
-# Additional data details
-
-# Model details {#sec-model-details}
-
-## Posterior predictive check
-
-In @fig-ppcheckandposteriorvsprior-1 we implement a posterior predictive check. This shows...
-
-In @fig-ppcheckandposteriorvsprior-2 we compare the posterior with the prior. This shows... 
-
-```{r}
-#| eval: true
-#| echo: false
-#| message: false
-#| warning: false
-#| label: fig-ppcheckandposteriorvsprior
+#| fig-cap: Distribution of prices of Paris Airbnb rentals
+#| fig-subcap: ["Distribution of prices", "Using the log scale for prices more than $1,000"]
 #| layout-ncol: 2
-#| fig-cap: "Examining how the model fits, and is affected by, the data"
-#| fig-subcap: ["Posterior prediction check", "Comparing the posterior with the prior"]
 
-pp_check(first_model) +
+airbnb_data_selected <-
+  airbnb_data_selected |>
+  mutate(
+    price = str_remove_all(price, "[\\$,]"),
+    price = as.integer(price)
+  )
+
+airbnb_data_selected |>
+  ggplot(aes(x = price)) +
+  geom_histogram(binwidth = 10) +
   theme_classic() +
-  theme(legend.position = "bottom")
+  labs(
+    x = "Price per night",
+    y = "Number of properties"
+  )
 
-posterior_vs_prior(first_model) +
-  theme_minimal() +
-  scale_color_brewer(palette = "Set1") +
-  theme(legend.position = "bottom") +
-  coord_flip()
+airbnb_data_selected |>
+  filter(price > 1000) |>
+  ggplot(aes(x = price)) +
+  geom_histogram(binwidth = 10) +
+  theme_classic() +
+  labs(
+    x = "Price per night",
+    y = "Number of properties"
+  ) +
+  scale_y_log10()
+
 ```
 
-## Diagnostics
+Moving on to (@fig-specific-prices-1) we focus on prices lesser than \$1000, where we observe that most properties have a nightly price of less than \$250. In (@fig-specific-prices-2) we specifically look at listing prices between \$90 and \$210.
 
-@fig-stanareyouokay-1 is a trace plot. It shows... This suggests...
+```{r}
+#| label: fig-specific-prices
+#| echo: false
+#| warning: false
+#| message: false
+#| fig-cap: Distribution of prices of Paris Airbnb rentals
+#| fig-subcap: ["Prices less than $1,000 suggest some bunching", "Prices between $90 and $210 illustrate the bunching more clearly"]
+#| layout-ncol: 2
 
-@fig-stanareyouokay-2 is a Rhat plot. It shows... This suggests...
+airbnb_data_selected |>
+  filter(price < 1000) |>
+  ggplot(aes(x = price)) +
+  geom_histogram(binwidth = 10) +
+  theme_classic() +
+  labs(
+    x = "Price per night",
+    y = "Number of properties"
+  )
+
+airbnb_data_selected |>
+  filter(price > 90) |>
+  filter(price < 210) |>
+  ggplot(aes(x = price)) +
+  geom_histogram(binwidth = 1) +
+  theme_classic() +
+  labs(
+    x = "Price per night",
+    y = "Number of properties"
+  )
+```
+
+\newpage
+
+# Reviews
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
+airbnb_data_less_1000 <-
+  airbnb_data_selected |>
+  filter(price < 1000)
+
+airbnb_data_no_superhost_nas <-
+  airbnb_data_less_1000 |>
+  filter(!is.na(host_is_superhost)) |>
+  mutate(
+    host_is_superhost_binary =
+      as.numeric(host_is_superhost)
+  )
+```
+
+```{r}
+#| label: fig-reviews
+#| echo: false
+#| warning: false
+#| message: false
+#| fig-cap: Distribution of review scores rating for Paris Airbnb rentals
+#| fig-height: 3.1
+
+airbnb_data_no_superhost_nas |>
+  ggplot(aes(x = review_scores_rating)) +
+  geom_bar() +
+  theme_classic() +
+  labs(
+    x = "Review scores rating",
+    y = "Number of properties"
+  )
+```
+Here we have just kept listing prices of under $1000. On Airbnb, generally, guests can give 1 to 5 star ratings across a variety of different aspects, but when we look at the reviews in our dataset, as represented in (@fig-reviews) it is clear that it is effectively a binary, and almost entirely the case that either the rating is five stars or not.
+
+```{r}
+#| label: fig-reviews-subset
+#| echo: false
+#| warning: false
+#| message: false
+#| fig-cap: Distribution of review scores rating for Paris Airbnb rentals
+#| fig-height: 3.1
+
+airbnb_data_no_superhost_nas |>
+  filter(!is.na(review_scores_rating)) |>
+  ggplot(aes(x = review_scores_rating)) +
+  geom_histogram(binwidth = 1) +
+  theme_classic() +
+  labs(
+    x = "Average review score",
+    y = "Number of properties"
+  )
+```
+
+We observe that there is a large number of listings that do not have a review rating yet and are this NA fields. In (@fig-reviews-subset) we focus on listing reviews that are not missing and have a score. We observe a large majority of 5 star ratings and generally no 0 star ratings in @fig-reviews-subset.
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
+airbnb_data_has_reviews <-
+  airbnb_data_no_superhost_nas |>
+  filter(!is.na(review_scores_rating))
+```
+
+# Host Response Time
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
+airbnb_data_has_reviews <-
+  airbnb_data_has_reviews |>
+  mutate(
+    host_response_time = if_else(
+      host_response_time == "N/A",
+      NA_character_,
+      host_response_time
+    ),
+    host_response_time = factor(host_response_time)
+  )
+```
+
+
+```{r}
+#| label: fig-host-response
+#| echo: false
+#| warning: false
+#| message: false
+#| fig-cap: Distribution of review scores for properties with NA response time, for Paris Airbnb rentals
+#| fig-height: 3
+
+airbnb_data_has_reviews |>
+  filter(is.na(host_response_time)) |>
+  ggplot(aes(x = review_scores_rating)) +
+  geom_histogram(binwidth = 1) +
+  theme_classic() +
+  labs(
+    x = "Average review score",
+    y = "Number of properties"
+  )
+```
+
+We observe a large amount of NA fields. In @fig-host-response we explore the distribution of review scores for NA host response times for Paris Airbnb rentals.
+
+Generally, missing values are dropped by our plots. @fig-missing-data includes them in the graph.
+
+```{r}
+#| label: fig-missing-data
+#| echo: false
+#| warning: false
+#| message: false
+#| fig-cap: Missing values in Paris Airbnb data, by host response time
+
+airbnb_data_has_reviews |>
+  ggplot(aes(
+    x = host_response_time,
+    y = review_scores_accuracy
+  )) +
+  geom_miss_point() +
+  labs(
+    x = "Host response time",
+    y = "Review score accuracy",
+    color = "Is missing?"
+  ) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
+airbnb_data_selected <-
+  airbnb_data_has_reviews |>
+  filter(!is.na(host_response_time))
+```
+
+\newpage
+
+# Number of Properties by a host on Airbnb
+
+@fig-num-properties represents the distribution of the number of properties a host has listed on Airbnb for Paris Airbnb rentals.
+
+```{r}
+#| label: fig-num-properties
+#| echo: false
+#| warning: false
+#| message: false
+#| fig-cap: Distribution of the number of properties a host has on Airbnb, for Paris Airbnb rentals
+
+airbnb_data_selected |>
+  ggplot(aes(x = host_total_listings_count)) +
+  geom_histogram() +
+  scale_x_log10() +
+  labs(
+    x = "Total number of listings, by host",
+    y = "Number of hosts"
+  )
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
+airbnb_data_selected <-
+  airbnb_data_selected |>
+  add_count(host_id) |>
+  filter(n == 1) |>
+  select(-n)
+```
+
+\newpage
+
+# Relationship Between Variables
+
+```{r}
+#| label: fig-price-review
+#| echo: false
+#| warning: false
+#| message: false
+#| fig-cap: Relationship between price and review and whether a host is a superhost, for Paris Airbnb rentals
+
+airbnb_data_selected |>
+  filter(number_of_reviews > 1) |>
+  ggplot(aes(x = price, y = review_scores_rating, 
+             color = host_is_superhost)) +
+  geom_point(size = 1, alpha = 0.1) +
+  theme_classic() +
+  labs(
+    x = "Price per night",
+    y = "Average review score",
+    color = "Superhost"
+  ) +
+  scale_color_brewer(palette = "Set1")
+```
+
+In @fig-price-review, we look at the relationship between price and reviews, and whether they are a super-host, for rental properties with more than one review.
+
+```{r}
+#| echo: false
+#| eval: false
+#| warning: false
+#| message: false
+
+airbnb_data_selected |>
+  count(host_is_superhost) |>
+  mutate(
+    proportion = n / sum(n),
+    proportion = round(proportion, digits = 2)
+  )
+```
+
+```{r}
+#| echo: false
+#| eval: false
+#| message: false
+#| warning: false
+
+airbnb_data_selected |>
+  tabyl(host_response_time, host_is_superhost) |>
+  adorn_percentages("col") |>
+  adorn_pct_formatting(digits = 0) |>
+  adorn_ns() |>
+  adorn_title()
+
+```
+
+```{r}
+#| echo: false
+#| eval: false
+#| message: false
+#| warning: false
+
+airbnb_data_selected |>
+  tabyl(neighbourhood_cleansed) |>
+  adorn_pct_formatting() |>
+  arrange(-n) |>
+  filter(n > 100) |>
+  adorn_totals("row") |>
+  head()
+
+```
+We now run our model and present our results and model summary in @tbl-model-summary.
 
 ```{r}
 #| echo: false
 #| eval: true
-#| message: false
+#| label: tbl-model-summary
+#| tbl-cap: Explaining whether a host is a superhost based on their response time
 #| warning: false
-#| label: fig-stanareyouokay
-#| fig-cap: "Checking the convergence of the MCMC algorithm"
-#| fig-subcap: ["Trace plot", "Rhat plot"]
-#| layout-ncol: 2
 
-plot(first_model, "trace")
+logistic_reg_superhost_response_review <-
+  glm(
+    host_is_superhost ~
+      host_response_time +
+      review_scores_rating,
+    data = airbnb_data_selected,
+    family = binomial
+  )
 
-plot(first_model, "rhat")
+modelsummary(logistic_reg_superhost_response_review)
+
 ```
 
+```{r}
+#| echo: false
+#| eval: false
+#| warning: false
+#| message: false
 
-
-\newpage
-
-
-# References
-
+write_parquet(
+  x = airbnb_data_selected, 
+  sink = "../data/analysis_data/2024-03-04-paris-airbnblistings-analysis_dataset.parquet"
+  )
+```
 

@@ -44,3 +44,6 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+# Paris Airbnb Data
+data/raw_data/airbnb_data.csv

@@ -1,24 +1,19 @@
-# Starter folder
+# Exploratory Data Analysis of Airbnb listings in Paris, Frace
 
 ## Overview
 
-This repo provides students with a foundation for their own projects associated with *Telling Stories with Data*. You do not need every aspect for every paper and you should delete aspects that you do not need.
+This repo provides all the work and files used and created while writing the paper titled *"Exploratory Data Analysis of Airbnb listings in Paris, Frace"*. To access the PDF of the paper you can find it in the `paper` directory where it is named as `paper.pdf`. The File Structure Section outlines each directory and also all relevant material that they contain. Please go through the File Structure Section before accessing the repo to gain all the understanding needed.
 
-To use this folder, click the green "Code" button", then "Download ZIP". Move the downloaded folder to where you want to work on your own computer, and then modify it to suit.
-
+To use this folder, click the green "Code" button", then "Download ZIP". The user can then move the folder around to wherever they want to work on it on their own computer.
 
 ## File Structure
 
-The repo is structured as:
+The repo has been structured in a way to make it accessible to the user. The repo is structured as:
 
--   `data/raw_data` contains the raw data as obtained from X.
--   `data/analysis_data` contains the cleaned dataset that was constructed.
--   `model` contains fitted models. 
--   `other` contains relevant literature, details about LLM chat interactions, and sketches.
--   `paper` contains the files used to generate the paper, including the Quarto document and reference bibliography file, as well as the PDF of the paper. 
--   `scripts` contains the R scripts used to simulate, download and clean data.
-
+-   `data/analysis_data` contains the cleaned data after running script `02-data_cleaning.R` and `paper.qmd`.
+-   `paper` contains the files used to generate the paper, including the Quarto document, `paper.qmd`, as well as the PDF of the paper, `paper.pdf`. 
+-   `scripts` contains the R scripts used to download `01-download_data.R` and clean `02-data_cleaning.R`. Kindly read the prerequisites in the R scripts' preamble to be able to reuse and run the code.
 
 ## Statement on LLM usage
 
-Aspects of the code were written with the help of the auto-complete tool, Codriver. The abstract and introduction were written with the help of ChatHorse and the entire chat history is available in inputs/llms/usage.txt.
+No LLM was used for this paper.
